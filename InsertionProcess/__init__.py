@@ -7,7 +7,7 @@ from com.sun.star.beans import PropertyValue
 import logging
 import atexit
 import InsertionProcess.DoInsertion
-import InsertionProcess.DataProcessor
+import InsertionProcess.PreProcess
 import InsertionProcess.LOif
 import pandas as pd
 import time
@@ -75,11 +75,9 @@ class InsertionProcess:
 
     def insert_record_process(self,record):
         self.document.reset()
-        proclist = DataProcessor.create_list_of_processing(
+        proclist = PreProcess.create_list_of_processing(
             record, self.graphic_variant_dic.keys(), DoInsertion)
-        self.processor.insertion_process(self.document,
-                                         proclist,
-                                         GVariants=self.graphic_variant_dic)
+        self.processor.insertion_process(proclist)
 
     def insert_and_export(self,record,num):
         logging.debug("Insert {} : record: {}".format(num,record))
@@ -97,23 +95,25 @@ class InsertionProcess:
                                                   pcr=c, pcindex=pcindex)
                 else:
                     pdffilename = '{:04d}_{:02d}.pdf'.format(num+1,pcindex)
-                LOif.export_as_pdf(self.document,
-                                   os.path.join(self._pdfdir,pdffilename),
-                                   filterdata = _fdata )
+                self.document.export_as_pdf(
+                    os.path.join(self._pdfdir,pdffilename),
+                    filterdata = _fdata
+                )
                 pcindex+=1
         else:
             if self._filenamer:
                 pdffilename = self._filenamer(num,record,self)
             else:
                 pdffilename = '{:04d}.pdf'.format(num+1)
-            LOif.export_as_pdf(self.document,
-                               os.path.join(self._pdfdir,pdffilename))
+            self.document.export_as_pdf(
+                os.path.join(self._pdfdir,pdffilename)
+            )
 
     def transform_record(self, num, record):
         # transform single line of data, it may processed with optional
         # data_converter
         data = record.copy()
-        auto_complemente_algorithm_field(data)
+        self.auto_complement_algorithm_field(data)
         logging.debug("After auto_complement {}".format(data))
         if self._data_converter:
             if self._data_converter(num,data,self):
@@ -128,13 +128,13 @@ class InsertionProcess:
     # レコードに生成する。
     def auto_complement_algorithm_field(self, data):
         '''データレコードと画像名の辞書から、生成すべき画像種のデータレコードを自動生成する'''
-        for dk in { s for s in record.keys() if len(s.split('.',1)) == 1 }:
+        for dk in { s for s in data.keys() if len(s.split('.',1)) == 1 }:
             for alg in GraphicMaker.known_algorithm:
                 newdk = '%s.%s' %(dk,alg)
-                if record.get(newdk) or not self.graphic_variand_dic.get(newdk):
+                if data.get(newdk) or not self.graphic_variant_dic.get(newdk):
                     continue
-                record[newdk] = record[dk]
-                logging.debug("Complemented %s as %s" %(newdk,record[newdk]))
+                data[newdk] = data[dk]
+                logging.debug("Complemented %s as %s" %(newdk,data[newdk]))
 
     def main_loop_pandas(self,datarecords):
         #Lets start the loop

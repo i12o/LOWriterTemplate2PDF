@@ -54,7 +54,7 @@ class Processor:
             path = entity.get(v) or entity.get("default")
         return path
 
-    def get_graphic_object_of_icons(self,listname,value):
+    def get_graphic_object_from_icons(self,listname,value):
         '''指定リストの指定値に該当するグラフィックオブジェクト(iconsのやつ)を取得する'''
         logging.debug("Given %s,%s" %(listname,value))
         filename = self._pick_filename_from_icon_list(listname,value)
@@ -103,7 +103,7 @@ class Processor:
                     logging.warning("No such Image Generator known %s, for %s" \
                                     %(item["Algorithm"],item["Name"]))
             elif item["Type"] == "ImageSelect":
-                gobj = self.get_graphic_object_of_list(item["ImageList"], item["Value"])
+                gobj = self.get_graphic_object_from_icons(item["ImageList"], item["Value"])
                 self.document.replace_graphic(
                     item["ImageName"],
                     gobj,
