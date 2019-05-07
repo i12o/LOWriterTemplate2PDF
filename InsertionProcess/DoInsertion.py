@@ -6,6 +6,7 @@ import sys
 import os
 import warnings
 from logging import getLogger
+
 import InsertionProcess.GraphicMaker as GraphicMaker
 
 # PIL は SVG に対応していないので、PNG 画像を使う
@@ -23,8 +24,6 @@ import InsertionProcess.GraphicMaker as GraphicMaker
 
 
 logging = getLogger(os.path.basename(__file__)).getChild(__name__)
-
-known_algorithm = GraphicMaker.known_algorithm
 
 # ファイル名を礎としてグラフィックオブジェクトをキャッシュする用
 
@@ -86,7 +85,7 @@ class Processor:
                     nocreate = 1
                 )
             elif item["Type"] == "GenerateImage":
-                func = known_algorithm[item["Algorithm"]]
+                func = GraphicMaker.get_graphic_maker_func(item["Algorithm"])
                 if func:
                     g = func(item["Value"])
                     newobj = self.document.create_graphic_from_binary(g)

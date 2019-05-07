@@ -1,19 +1,22 @@
 import os
 import sys
 import csv
-import uno
-import unohelper
-from com.sun.star.beans import PropertyValue
-from logging import getLogger
-import atexit
-import InsertionProcess.DoInsertion
-import InsertionProcess.PreProcess
-import InsertionProcess.LOif
-import pandas as pd
 import time
 from datetime import datetime
 import re
 import string
+from logging import getLogger
+import atexit
+
+import uno
+import unohelper
+from com.sun.star.beans import PropertyValue
+import pandas as pd
+
+import InsertionProcess.DoInsertion
+import InsertionProcess.PreProcess
+import InsertionProcess.LOif
+import InsertionProcess.GraphicMaker
 
 logging = getLogger(os.path.basename(__file__)).getChild(__name__)
 

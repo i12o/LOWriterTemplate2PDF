@@ -37,7 +37,6 @@ def create_list_of_processing(record, list_of_imagename, processor):
 #         ex. ShipNo.CODE128, QueryURL.QRCode ...
 
 # imagenames contains all Labels of GraphicObject, in document.
-# algolist is list of graphic generator implemented in GraphicMaker.py
 def _compile_data_to_processlist(data, imagenames):
     proclist = []
     for (key,value) in data.items():

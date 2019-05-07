@@ -1,66 +1,57 @@
-# 画像イメージの生成処理を纏める
-# UNO には依存しない
+# Use python-barcode
 
 import sys
 import os
 import glob
-import reportlab.graphics.barcode
-from reportlab.lib.units import mm
+from logging import getLogger
 import base64
-import pyqrcode
-import logging
+import io
 
-# Name of algorithm to create image : Code reference
+import barcode
+import pyqrcode
+
+logging = getLogger(os.path.basename(__file__)).getChild(__name__)
+
+# 'Name of algorithm to create image' : 'Code reference'
 known_algorithm = {}
 
-barcode_width = 640
-barcode_height = 240
+supported = {
+    "EAN8"    : "EAN8",
+    "EAN13"   : "EAN13",
+    "EAN14"   : "EAN14",
+    "CODE39"  : "Code39",
+    "CODE128" : "Code128",
+    "JAN"     : "JAN",
+    "UPCA"    : "UPCA",
+    "ISBN13"  : "ISBN13",
+    "ISBN10"  : "ISBN10",
+    "ISSN"    : "ISSN",
+    "PZN"     : "PZN",
+    "ITF"     : "ITF",
+}
 
+# If you need NW7/Codabar, there're barcode fonts for them.
+# Just install these, and just change font of textfield to
+# Codabar font.
 
-def create_ean13_png_image(value):
-    return reportlab.graphics.barcode.createBarcodeImageInMemory(
-        'EAN13', value = value, format='png',
-        width = barcode_width, height = barcode_height, humanReadable =1)
+def _barcode_binder(sig):
+    def closure(x):
+        return _barcode_generator(sig,x)
+    return closure
 
-known_algorithm["EAN13"] = create_ean13_png_image
+for k,v in supported.items():
+    known_algorithm[k] = _barcode_binder(v)
 
-# Generated image might have quality problem, so
-# use of NW7/Codabar Generator is not recommended.
-# It might be better using Barcode font for these.
-def create_nw7_png_image(value):
-    # ストップがあるため2文字増える
-    l = len(value)+2
-    # 3文字で14単位増え、mod 3 に従い 5,4,5 単位増える
-    # サイレントエリアが5単位*2
-    barunits = 14 * ( l // 3 ) + (0,5,9)[l % 3] + 10
-    return reportlab.graphics.barcode.createBarcodeImageInMemory(
-        'Codabar', value = value, format='png',
-        width= barunits*16, height = barcode_height * 2, humanReadable =1)
-#        barWidth=0.3*mm, height = barcode_height, humanReadable =1)
-
-known_algorithm["NW7"] = create_nw7_png_image
-known_algorithm["Codabar"] = create_nw7_png_image
-
-def create_code39_png_image(value):
-    return reportlab.graphics.barcode.createBarcodeImageInMemory(
-        'Standard39', value = value, format='png',
-        width = barcode_width, height = barcode_height, humanReadable =1)
-
-known_algorithm["CODE39"] = create_code39_png_image
-
-def create_extended39_png_image(value):
-    return reportlab.graphics.barcode.createBarcodeImageInMemory(
-        'Extended39', value = value, format='png',
-        width = barcode_width, height = barcode_height, humanReadable =1)
-
-known_algorithm["EXTENDED39"] = create_extended39_png_image
-
-def create_code128_png_image(value):
-    return reportlab.graphics.barcode.createBarcodeImageInMemory(
-        'Code128', value = value, format='png',
-        width = barcode_width * 2, height = barcode_height * 2, humanReadable =1)
-
-known_algorithm["CODE128"] = create_code128_png_image
+def _barcode_generator(barcode_type,value):
+    bc = barcode.get(barcode_type,value)
+    # As I can't see how to get binary expression of barcode image,
+    # I use BytesIO.  Arenn't there more better way?
+    fp = io.BytesIO()
+    bc.write(fp)
+    fp.seek(0)
+    barcode_bin = fp.read()
+    fp.close()
+    return barcode_bin
 
 def create_qrcode_png_image(value):
     qrcode = pyqrcode.create(value)
@@ -68,6 +59,9 @@ def create_qrcode_png_image(value):
     return pngimage
 
 known_algorithm["QRCode"] = create_qrcode_png_image
+
+def get_graphic_maker_func(algoname):
+    return known_algorithm[algoname]
 
 def raw_png(filename):
     '''生のPNGファイルを読み込む。画像生成アルゴリズムではない'''
