@@ -5,7 +5,7 @@
 import sys
 import os
 import warnings
-import logging
+from logging import getLogger
 import InsertionProcess.GraphicMaker as GraphicMaker
 
 # PIL は SVG に対応していないので、PNG 画像を使う
@@ -22,6 +22,8 @@ import InsertionProcess.GraphicMaker as GraphicMaker
 # }
 
 
+logging = getLogger(os.path.basename(__file__)).getChild(__name__)
+
 known_algorithm = GraphicMaker.known_algorithm
 
 # ファイル名を礎としてグラフィックオブジェクトをキャッシュする用
@@ -34,7 +36,7 @@ class Processor:
         self.document = _document # LOif.Document
         self.graphic_object_cache = {}
         self.setup_icon_list(icons_dir)
-        logging.info("Initialized")
+        logging.debug("Initialized")
 
     def setup_icon_list(self,path):
         self.icon_list = GraphicMaker.make_list_of_pict_selection(path)
@@ -76,8 +78,6 @@ class Processor:
 
     def insertion_process(self,proclist):
         '''uno関連のオブジェクトと、処理記述リストを受け取って、帳票への差し込み処理を行なう'''
-        # 処理速度を速くするために、画面更新を止める
-        self.document.lock_controller()
         for item in proclist:
             if item["Type"] == "UserVar":
                 self.document.build_user_variable(
@@ -111,4 +111,3 @@ class Processor:
                 )
             else:
                 logging.warning("Unsupported processing type: %s" %(item["Type"],))
-        self.document.unlock_controller()

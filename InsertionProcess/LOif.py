@@ -6,7 +6,9 @@ import uno
 import unohelper
 from com.sun.star.beans import PropertyValue
 import time
-import logging
+from logging import getLogger
+
+logging = getLogger(os.path.basename(__file__)).getChild(__name__)
 
 CSS = 'com.sun.star'
 
@@ -115,6 +117,7 @@ class Document:
 
     def lock_controller(self):
         self.i_locked_it = 0
+        logging.debug("Lock controller is locked?{}".format(self.document.hasControllersLocked()))
         if not self.document.hasControllersLocked():
             self.document.lockControllers()
             self.i_locked_it = 1;

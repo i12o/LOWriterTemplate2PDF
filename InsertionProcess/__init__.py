@@ -4,7 +4,7 @@ import csv
 import uno
 import unohelper
 from com.sun.star.beans import PropertyValue
-import logging
+from logging import getLogger
 import atexit
 import InsertionProcess.DoInsertion
 import InsertionProcess.PreProcess
@@ -14,6 +14,8 @@ import time
 from datetime import datetime
 import re
 import string
+
+logging = getLogger(os.path.basename(__file__)).getChild(__name__)
 
 SYMBOLSDIRPATH = 'icons'
 PDFEXPORTDIR = 'pdfout'
@@ -113,6 +115,7 @@ class InsertionProcess:
         # transform single line of data, it may processed with optional
         # data_converter
         data = record.copy()
+        logging.debug(data)
         self.auto_complement_algorithm_field(data)
         logging.debug("After auto_complement {}".format(data))
         if self._data_converter:
@@ -139,21 +142,27 @@ class InsertionProcess:
     def main_loop_pandas(self,datarecords):
         #Lets start the loop
         logging.debug('Starting to Loop Through Panda Records')
+        # 処理速度を速くするために、画面更新を止める
+        self.document.lock_controller()
         for num,row in datarecords.iterrows():
             record = dict(row)
             procrecord = self.transform_record(num,record)
             if procrecord:
                 self.insert_and_export(procrecord, num)
+        self.document.unlock_controller()
 
     def main_loop_list_of_dict(self,datarecords):
         #Lets start the loop
         logging.debug('Starting to Loop Through list of dict')
+        # 処理速度を速くするために、画面更新を止める
+        self.document.lock_controller()
         num = 0
         for record in datarecords:
             procrecord = self.transform_record(num,record)
             if procrecord:
                 self.insert_and_export(procrecord, num)
             num += 1
+        self.document.unlock_controller()
 
     def cleanup(self):
         if self._do_cleanup:
