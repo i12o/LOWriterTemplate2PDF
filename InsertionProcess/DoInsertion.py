@@ -78,6 +78,7 @@ class Processor:
     def insertion_process(self,proclist):
         '''uno関連のオブジェクトと、処理記述リストを受け取って、帳票への差し込み処理を行なう'''
         for item in proclist:
+            logging.debug("Processing {}".format(item))
             if item["Type"] == "UserVar":
                 self.document.build_user_variable(
                     item["Name"],
