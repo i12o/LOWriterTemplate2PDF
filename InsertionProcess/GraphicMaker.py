@@ -53,12 +53,16 @@ def _barcode_generator(barcode_type,value):
     fp.close()
     return barcode_bin
 
-def create_qrcode_png_image(value):
+def create_qrcode_svg(value):
     qrcode = pyqrcode.create(value)
-    pngimage = base64.b64decode(qrcode.png_as_base64_str(scale=4))
-    return pngimage
+    fp = io.BytesIO()
+    qrcode.svg(fp,scale=4)
+    fp.seek(0)
+    image = fp.read()
+    fp.close()
+    return image
 
-known_algorithm["QRCode"] = create_qrcode_png_image
+known_algorithm["QRCode"] = create_qrcode_svg
 
 def get_graphic_maker_func(algoname):
     return known_algorithm[algoname]
