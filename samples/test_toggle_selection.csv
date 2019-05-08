@@ -1,0 +1,5 @@
+emerge.Toggle	emerge_reason	Seiseki.Toggle	choice.Selection
+0		verygood	A
+1	期限遅れ	bad	B
+1	あと10分しかない!	good	C
+0		verygood	A,C,D
