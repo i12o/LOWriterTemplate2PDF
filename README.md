@@ -41,3 +41,22 @@ Linux 上で開発していますので、それ以外の環境で動作する�
 私 python でのプログラミング経験はほぼないため、ロクでもないコードになっ
 ていると思われます。とりあえずご容赦下さい。
 
+## サンプル
+
+とりあえず samples/ 以下に
+
+  -
+    - テンプレート `test_sasikomi.odt`
+    - 差し込みデータ `test_sasikomi.csv`
+  -
+    - テンプレート `test_toggle_selection.odt`
+    - 差し込みデータ `test_toggle_selection.csv`
+
+を用意したので、
+
+    bin/generic_form_insertion.py -t samples/test_sasikomi.odt \
+        test_sasikomi.csv
+
+などと実行して、pdfout に作成される PDF をご覧下さい。
+色々と解説も含めてあります。
+
