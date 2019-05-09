@@ -107,6 +107,7 @@ class InsertionProcess:
         self.insert_record_process(record)
         if self._spillfix:
             spillresult = self.document.do_spillfix()
+            logging.debug("spillresult {}".format(spillresult))
             if spillresult is None:
                 logging.debug('Tried spillfix, but nothing changed')
             elif spillresult is False:

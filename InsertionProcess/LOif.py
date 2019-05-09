@@ -124,7 +124,6 @@ class Document:
             for name,dic in self.spillfix_required.items():
                 self.textframe_text_setsize(dic['textframe'],
                                             Reset=self.initial_spillfix_frame_status[name])
-# TRY
                 dic['textframe'].FrameIsAutomaticHeight = dic['FrameIsAutomaticHeight']
                 dic['textframe'].WidthType = dic['WidthType']
 
@@ -336,9 +335,6 @@ class Document:
            contents doesn't fit in textframe til LimitSize, and
            True when successfully fit content.'''
         status = None
-# TRY
-#        frameisautomaticheight = textframe.FrameIsAutomaticHeight
-#        widthtype = textframe.WidthType
         while self.check_textframe_content_spilled_out(textframe):
             (prevsize,reach_limit) = \
                 self.textframe_text_setsize(textframe,
@@ -351,10 +347,6 @@ class Document:
                     status = True
                 break
             status = True
-# TRY
-        # if not status is None:
-        #     textframe.FrameIsAutomaticHeight = frameisautomaticheight
-        #     textframe.WidthType = widthtype
         return status
 
     def do_spillfix(self,*,step=-0.5):
@@ -365,25 +357,14 @@ class Document:
         all_fit = True
         for name,d in self.spillfix_required.items():
             optarg = {'DeltaStep':step}
-# TRY
-#            logging.warn("Init {}: {},{}".format(name,d['FrameIsAutomaticHeight'],d['WidthType']))
             if d['directive']:
                 optarg['LimitSize'] = d['directive']
-# TRY
-            # logging.warn("Prev {}: {},{}".format(name,
-            #                                      d['textframe'].FrameIsAutomaticHeight,
-            #                                      d['textframe'].WidthType))
             result = self.spillfix_textframe(d['textframe'],**optarg)
-# TRY
-            # logging.warn("Post {}: {},{}".format(name,
-            #                                      d['textframe'].FrameIsAutomaticHeight,
-            #                                      d['textframe'].WidthType))
             if not result is None:
                 someframe_changed = True
-                # Don't know when, but Frame's auto resize parameter may get changed.
-                # So quick hack.
                 if result is False:
                     all_fit = False
+                    logging.warn("TextFrame {} spill out still".format(name))
         if someframe_changed:
             return all_fit
-        return someframe_changed
+        return None
