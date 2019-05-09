@@ -2,11 +2,13 @@
 
 import sys
 import os
+import time
+import re
+from logging import getLogger
+
 import uno
 import unohelper
 from com.sun.star.beans import PropertyValue
-import time
-from logging import getLogger
 
 logging = getLogger(os.path.basename(__file__)).getChild(__name__)
 
@@ -80,6 +82,14 @@ class Document:
         (self.inital_graphics, self.grouped_graphics) = \
             self.get_all_graphics_in_doc()
         self.all_textfields = self.get_all_textfield_in_doc()
+        # Get spillfix required frame names, and directive options
+        self.spillfix_required = self.find_spillfix_required_textframes()
+        # store each TextFrame's CharHeight* initial status
+        self.initial_spillfix_frame_status = {}
+        if self.spillfix_required:
+            for name,frame in self.spillfix_required.items():
+                (info,dummy) = self.textframe_text_setsize(frame['textframe'])
+                self.initial_spillfix_frame_status[name] = info
         return;
 
     # export document in PDF
@@ -108,9 +118,15 @@ class Document:
         except:
             logging.error("Can't export {}".format(exportpdfname))
 
-    def reset(self):
-        # TODO: reset modified parameters to original
-        pass
+    def reset(self,*,spillfix=False):
+        if spillfix:
+            # Reset modified parameters(TextSize) to original
+            for name,dic in self.spillfix_required.items():
+                self.textframe_text_setsize(dic['textframe'],
+                                            Reset=self.initial_spillfix_frame_status[name])
+# TRY
+                dic['textframe'].FrameIsAutomaticHeight = dic['FrameIsAutomaticHeight']
+                dic['textframe'].WidthType = dic['WidthType']
 
     def cleanup(self):
         self.document.dispose()
@@ -215,6 +231,35 @@ class Document:
             else:
                 logging.warning("Failed to find Image %s" %(n,))
 
+    # Find TextFrames its description contains 'spillfix:something'
+    # Optional something must be float.  Shrinked TextSize must be
+    # over this limit.
+    #   ex. spillfix:8 => Smallest TextSize is 8
+    #       spillfix   => Smallest TextSize is 5(default)
+    #                       specified in spillfix_textframe's LimitSize.
+    def find_spillfix_required_textframes(self):
+        spillfix = {}
+        for tfn in self.document.TextFrames.ElementNames:
+            tf = self.document.TextFrames.getByName(tfn)
+            is_spillfix = re.search("spillfix(:([-a-zA-Z0-9_.]+))?",tf.Description)
+            if is_spillfix:
+                lim = None
+                d = is_spillfix.group(2)
+                try:
+                    lim = float(d)
+                except:
+                    pass
+
+                spillfix[tfn] = {
+                    "directive": lim,
+                    "textframe": tf,
+                    # Resetting fontsize make FrameIsAutomaticHeight be True,
+                    # so record previous status.
+                    'FrameIsAutomaticHeight': tf.FrameIsAutomaticHeight,
+                    'WidthType': tf.WidthType,
+                }
+        return spillfix
+
     # 指定のテキストフレームが固定サイズである場合に、中身がはみ出しているかどうか、
     # 自動サイズ変更に切り替えてみて大きさが変化するかどうかで調べる。
     # よって、このテキストフレームの内側にある要素ではみ出しが生じていても
@@ -236,27 +281,109 @@ class Document:
         if is_overflow == 1:
             return True
 
+    def _get_textframe_contents(self,textframe):
+        contents = []
+        for t in textframe.Text.createEnumeration():
+            contents.append(t)
+        return contents
+
     # テキストフレーム内部にあるテキストのフォントサイズを調整する。
     # テキストフレーム以外のパラメータを指定せずに呼び出すと、その
     # テキストフレーム内部のテキスト要素の現在のフォントサイズが返される
-    # TODO: Before applying this, text size must be saved, and
-    #   resettable.
-    #   When this textframe contains other than Text, it'll raise
-    #   exception not having CharHeight property
-    def textframe_text_setsize(self,textframe,size=None,reset=None):
+    # とりあえず SizeDiff として負の float を指定すると、CharHeigt*
+    # を全て +SizeDiff する。
+    # フレーム内部に複数の Text オブジェクト が存在する場合、全ての
+    # オブジェクト一律にサイズを変える。
+    # TODO:
+    #    フレームに対して Text.createEnumeration() して得られるのは、
+    #   おそらく段落。段落に対してサイズ変更をすると、段落内の文字単位
+    #   で指定しているサイズも上書きされ、このメソッドではそれらの情報
+    #   を取れない。
+    #    このため、Reset してもフレーム内のサイズ情報は失われる。
+    def textframe_text_setsize(self,textframe,SizeDiff=None,Reset=None,AlertLimit=1.0):
         original = []
-        prop_heights = ('CharHeight', 'CharHeightAsian','CharHeightComplex')
+        prefix = 'CharHeight'
+        styleprops = ('', 'Asian','Complex')
         index = 0
+        if SizeDiff and SizeDiff >=0:
+            logging.warn("SizeDiff must negative number, given {}".format(SizeDiff))
+            return None,True
+        under_alert = False
         for t in textframe.Text.createEnumeration():
             prev = {}
-            for ch in prop_heights:
-                if reset:
-                    t.setPropertyValue(ch,reset[index][ch])
-                else:
-                    prev[ch] = t.getPropertyValue(ch)
-                    if size:
-                        t.setPropertyValue(ch,size)
+            for ch in styleprops:
+                if t.supportsService(CSS + '.style.CharacterProperties' + ch):
+                    if Reset:
+                        t.setPropertyValue(prefix + ch,
+                                           Reset[index][ch])
+                    else:
+                        prev[ch] = t.getPropertyValue(prefix + ch)
+                        if SizeDiff:
+                            newsize = prev[ch] + SizeDiff
+                            if newsize <= AlertLimit or newsize <=0:
+                                under_alert = True
+                                newsize = AlertLimit if AlertLimit > 0 else 1
+                            t.setPropertyValue(prefix + ch, newsize)
             if prev.keys():
                 original.append(prev)
         if len(original):
-            return original
+            return original,under_alert
+
+    def spillfix_textframe(self,textframe,LimitSize=5,DeltaStep=-0.5):
+        '''This shrinks FontSize within textframe by DeltaStep, until
+           contents of textframe doesn't spill out textframe.
+           It returns None, when no shrinking done, False, when
+           contents doesn't fit in textframe til LimitSize, and
+           True when successfully fit content.'''
+        status = None
+# TRY
+#        frameisautomaticheight = textframe.FrameIsAutomaticHeight
+#        widthtype = textframe.WidthType
+        while self.check_textframe_content_spilled_out(textframe):
+            (prevsize,reach_limit) = \
+                self.textframe_text_setsize(textframe,
+                                            SizeDiff=DeltaStep,
+                                            AlertLimit=LimitSize)
+            if reach_limit:
+                if self.check_textframe_content_spilled_out(textframe):
+                    status = False
+                else:
+                    status = True
+                break
+            status = True
+# TRY
+        # if not status is None:
+        #     textframe.FrameIsAutomaticHeight = frameisautomaticheight
+        #     textframe.WidthType = widthtype
+        return status
+
+    def do_spillfix(self,*,step=-0.5):
+        '''This does spillfix for required textframes.  Nothing chagned,
+           returns None.  All successfully spillfixed, returns True.
+           Some of textframes are still spilling out, returns False.'''
+        someframe_changed = False
+        all_fit = True
+        for name,d in self.spillfix_required.items():
+            optarg = {'DeltaStep':step}
+# TRY
+#            logging.warn("Init {}: {},{}".format(name,d['FrameIsAutomaticHeight'],d['WidthType']))
+            if d['directive']:
+                optarg['LimitSize'] = d['directive']
+# TRY
+            # logging.warn("Prev {}: {},{}".format(name,
+            #                                      d['textframe'].FrameIsAutomaticHeight,
+            #                                      d['textframe'].WidthType))
+            result = self.spillfix_textframe(d['textframe'],**optarg)
+# TRY
+            # logging.warn("Post {}: {},{}".format(name,
+            #                                      d['textframe'].FrameIsAutomaticHeight,
+            #                                      d['textframe'].WidthType))
+            if not result is None:
+                someframe_changed = True
+                # Don't know when, but Frame's auto resize parameter may get changed.
+                # So quick hack.
+                if result is False:
+                    all_fit = False
+        if someframe_changed:
+            return all_fit
+        return someframe_changed

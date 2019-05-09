@@ -7,6 +7,7 @@ import re
 import string
 from logging import getLogger
 import atexit
+from collections.abc import Iterable
 
 import uno
 import unohelper
@@ -39,10 +40,16 @@ PDFEXPORTDIR = 'pdfout'
 
 # give '.odt' as template_file,
 # LO connection desc as loportstr
-# If input data convertion required, give converter function as data_converter.
-# This function must destructively modify passed dictionary itself.
+# If input data convertion required, give converter function list as data_converter.
+# This function must destructively modify passed dictionary itself, and return True.
+# When it returns False, that data is skipped and no PDF exported.
 # If you change Exported PDF's filename instead of first field value of input data,
 # pass function which returns filename from single tuple of input data as filenamer.
+#
+# spillfix:
+#    None, False, 0 => Never try
+#    2 => Try spillfix, and it fails to fix, no PDF is written
+#    True, not 2 => Try spillfix, and output PDF anyway.
 class InsertionProcess:
     def __init__(self,
                  template_file, # filename of odt
@@ -50,10 +57,19 @@ class InsertionProcess:
                  symbolsdir=SYMBOLSDIRPATH, # Relative to template
                  data_converter=None,       # Data converter
                  filenamer=None,            # Filename creater
-                 pdfoutdir=PDFEXPORTDIR ):  # PDF output dir
-        self._data_converter = data_converter
+                 pdfoutdir=PDFEXPORTDIR,    # PDF output dir
+                 spillfix=None, # Experimental: do spillfix
+    ):
+        self._data_converter = None
+        if data_converter:
+            if isinstance(data_converter,Iterable):
+                self._data_converter = data_converter
+            else:
+                self._data_converter = (data_converter,)
         self._filenamer = filenamer
         self._pdfdir = pdfoutdir
+        self._do_cleanup = False
+        self._spillfix = spillfix
 
         logging.debug("Connecting libreoffice with {}".format(loportstr))
         self.context = LOif.ConnectLO(loportstr)
@@ -64,7 +80,7 @@ class InsertionProcess:
         self.document = LOif.Document(self.context,filename=template_file)
 
         if template_file:
-            self._do_cleanup = 1
+            self._do_cleanup = True
             self.template_base = os.path.dirname(template_file)
             logging.debug("Opened {} as templte file".format(template_file))
         else:
@@ -79,14 +95,28 @@ class InsertionProcess:
         self.processor = DoInsertion.Processor(self.document,self._symbolsdir)
 
     def insert_record_process(self,record):
-        self.document.reset()
+        self.document.reset(spillfix = self._spillfix)
+        graphicgrpnames = self.graphic_variant_dic.keys() \
+            if self.graphic_variant_dic else ()
         proclist = PreProcess.create_list_of_processing(
-            record, self.graphic_variant_dic.keys(), DoInsertion)
+            record, graphicgrpnames, DoInsertion)
         self.processor.insertion_process(proclist)
 
     def insert_and_export(self,record,num):
         logging.debug("Insert {} : record: {}".format(num,record))
         self.insert_record_process(record)
+        if self._spillfix:
+            spillresult = self.document.do_spillfix()
+            if spillresult is None:
+                logging.debug('Tried spillfix, but nothing changed')
+            elif spillresult is False:
+                logging.warning('Tried spillfix, but some textframes still spill out')
+                if self._spillfix == 2:
+                    logging.error('record number {} has unfixable spillout frame. Skipped' \
+                                  .format(num+1))
+                    return
+            else:
+                logging.debug('Successfully spillfixed {}'.format(num))
 
         # PageRangeのリスト。
         #   [ '1-2' ,'1' ]
@@ -122,10 +152,11 @@ class InsertionProcess:
         self.auto_complement_algorithm_field(data)
         logging.debug("After auto_complement {}".format(data))
         if self._data_converter:
-            if self._data_converter(num,data,self):
-                return data
-            else:
-                return
+            for conv in self._data_converter:
+                if self._data_converter(num,data,self):
+                    return data
+                else:
+                    return
         return data
 
     # データレコードに ShippingNo だけがあり、テンプレート文書の画像
@@ -137,7 +168,9 @@ class InsertionProcess:
         for dk in { s for s in data.keys() if len(s.split('.',1)) == 1 }:
             for alg in GraphicMaker.known_algorithm:
                 newdk = '%s.%s' %(dk,alg)
-                if data.get(newdk) or not self.graphic_variant_dic.get(newdk):
+                if data.get(newdk) \
+                   or not (self.graphic_variant_dic \
+                           and self.graphic_variant_dic.get(newdk)):
                     continue
                 data[newdk] = data[dk]
                 logging.debug("Complemented %s as %s" %(newdk,data[newdk]))

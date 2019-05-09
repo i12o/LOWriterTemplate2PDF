@@ -44,6 +44,9 @@ parser.add_argument("--pdf-export",
                     help="PDF export directory, Default './pdfout'")
 parser.add_argument("--loport",
                     help="UNO-URL, to connect to LibreOffice\n  ex. {}".format(LOPORT))
+parser.add_argument("--experimental-spillfix",
+                    type=int, choices=[1,2],
+                    help="Experimental spillout fix function enabled.\nWhen 2 specified, PDF are not written which failed to fix")
 parser.add_argument("-t", "--odt",
                     help=".odt file(LoWriter document) to be used as Template")
 parser.add_argument("csv",
@@ -73,6 +76,7 @@ use_loport = LOPORT
 use_pdfexport = PDFEXPORTDIR
 template_file = None
 csv_file = None
+spillfix = None
 
 if args.icons_path:
     use_iconsdir = args.icons_path
@@ -84,12 +88,17 @@ if args.odt:
     template_file = args.odt
 if args.csv:
     csv_file = args.csv
+if args.experimental_spillfix:
+    spillfix = args.experimental_spillfix
 
 try:
     inserter \
         = InsertionProcess.InsertionProcess(template_file,use_loport, \
                                             symbolsdir=use_iconsdir, \
-                                            pdfoutdir=use_pdfexport )
+                                            pdfoutdir=use_pdfexport,
+                                            spillfix=spillfix
+        )
+
 except:
     inserter.cleanup()
     logging.error("Can't connect LibreOffice, or open Document {}".format(template_file))
