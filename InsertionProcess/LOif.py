@@ -101,6 +101,7 @@ class Document:
         exportprop = [
             PropertyValue("FilterName",0,"writer_pdf_Export",0),
         ]
+        logging.debug("filterdata {}".format(filterdata))
         if filterdata:
             fd = []
             for (k,v) in filterdata.items():
@@ -113,7 +114,7 @@ class Document:
             os.path.abspath( filename )
         )
         try:
-            logging.debug("Export as {}".format(exportpdfname))
+            logging.debug("Export as {}, prop {}".format(exportpdfname,exportprop))
             self.document.storeToURL(exportpdfname,exportprop)
         except:
             logging.error("Can't export {}".format(exportpdfname))

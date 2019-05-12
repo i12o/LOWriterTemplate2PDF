@@ -154,9 +154,8 @@ class InsertionProcess:
         logging.debug("After auto_complement {}".format(data))
         if self._data_converter:
             for conv in self._data_converter:
-                if self._data_converter(num,data,self):
-                    return data
-                else:
+                logging.debug('Data Conversion Process {}'.format(conv.__name__))
+                if not conv(num,data,self):
                     return
         return data
 
