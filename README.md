@@ -1,8 +1,5 @@
 # LOWriterTemplate2PDF
 
-*ドキュメントはまだちゃんと書けてません*
-そのうち追加します。
-
 LibreOffice Writer で作成した帳票テンプレートに、CSVのデータを差し込み、
 PDF としてエクスポートします。
 
@@ -33,6 +30,7 @@ PDF としてエクスポートします。
   - python3-uno
   - python3-barcode
   - python3-pyqrcode
+  - python3-pandas
 
 に依存します。LibreOffice の古いバージョンでの動作は確認していません。
 UNOが使えれば、よほど古くなければ動く気はします。
@@ -52,11 +50,20 @@ Linux 上で開発していますので、それ以外の環境で動作する�
     - テンプレート `test_toggle_selection.odt`
     - 差し込みデータ `test_toggle_selection.csv`
 
-を用意したので、
+他を用意してあります。
+
+事前に LibreOffice にコマンド行オプションを付けてローカルホストのポー
+ト2083で接続できるように起動しておきます。
+
+    libreoffice --accept='socket,host=localhost,port=2083;urp;'
+
+サンプルを使って
 
     bin/generic_form_insertion.py -t samples/test_sasikomi.odt \
         test_sasikomi.csv
 
-などと実行して、pdfout に作成される PDF をご覧下さい。
-色々と解説も含めてあります。
+などと実行して、pdfout に作成される PDF をご覧下さい。LibreOfficeに接
+続するためのポートは、スクリプトの `--loport` オプションで変更できます。
+サンプルのテンプレートには色々と解説も含めてあります。
 
+書きかけですが多少の[ドキュメント](./01_intro.md)があります。
