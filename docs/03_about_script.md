@@ -110,10 +110,11 @@ TextFrameオブジェクトの説明に spillfix:FLOAT と書いておくと、F
 
 となる関数を指定して下さい。レコードは処理中の1レコード、CSVの1行です。
 レコード番号はCSVの何行目を処理しているかを示します。オブジェクトは
-`InsertionProcess.InsertionProcess` のインスタンスが渡されます。
-pcr はページ制御指示があった場合のその文字列(`1-3`、`2`など)、pcindex
-はページ制御指示の何番目を処理するかが渡されます(`1-3 2 4 5` と指示さ
-れていた場合、0、1、2、3 の順に pcindex  filenamer が呼び出されます)。
+`InsertionProcess.InsertionProcess` のインスタンスが渡されます。pcr は
+ページ制御指示があった場合のその文字列(`1-3`、`2`など)、pcindexはペー
+ジ制御指示の何番目を処理するかが渡されます(`1-3 2 4 5` と指示されてい
+た場合、0、1、2、3 の順に pcindex が設定されて filenamer が呼び出され
+ます)。
 
     def by_primarykey(num, record, obj, pcr=None, pcindex=0):
        return record['PrimaryKey'] + '.pdf'
@@ -133,8 +134,9 @@ pcr はページ制御指示があった場合のその文字列(`1-3`、`2`な�
 1. `pcr=4, pcindex=2`
 1. `pcr=5, pcindex=3`
 
-と4回、filenamer が呼び出されます。`__meta.printcontrol`を使う場合、
-pcindex を使うなどして上書きとならないファイル名を返すようにして下さい。
+と4回、filenamer が呼び出されます。カスタム filenamer と
+`__meta.printcontrol`を一緒に使う場合、pcindex を使うなどして上書きと
+ならないファイル名を返すようにして下さい。
 
 ### data_converter
 
@@ -169,4 +171,4 @@ pcindex を使うなどして上書きとならないファイル名を返すよ
 `filenamer` に、出力ファイル名に`_01`とかつけないでレコード番号だけの
 ファイル名をつける `filenamer` 関数を追加しています。
 
-[ユーティリティ](./04.utils.md)
+[ユーティリティ](./04_utils.md)
