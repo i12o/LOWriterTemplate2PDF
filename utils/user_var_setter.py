@@ -38,11 +38,16 @@ optionvalues = {
 }
 
 parser = InsertionProcess.common_options.args_setup(
-    "Fill each record of data into Template, and export PDF",
+    "Read CSV and set uservariables to Template",
     optionvalues
 )
+parser.add_argument('-i','--index',
+                    help="Set N-th of data, 0 origin",
+                    type=int, default=0)
 
 args = InsertionProcess.common_options.args_parse(parser,optionvalues)
+
+index = args.index
 
 logging.basicConfig(level = optionvalues['loglevel'])
 
@@ -65,14 +70,7 @@ except:
     exit(1)
 
 atexit.register(inserter.cleanup)
-logging.info("Use template {}, load icons from {} and export PDF to {}" \
-             .format(optionvalues['template_file'],
-                     optionvalues['use_iconsdir'],
-                     optionvalues['use_pdfexport']))
 
-# pandas を使って CSV を読み込む。
-# read_table はタブ切りを読み込み、dtype=str と指定することで
-# 全てのレコードを文字列として読み込む
 csvrecords = pd.read_table(optionvalues['csv_file'],dtype=str)
 # 全カラムが空値の行を削除する
 csvrecords = csvrecords.dropna(how='all')
@@ -80,10 +78,10 @@ csvrecords = csvrecords.dropna(how='all')
 csvrecords = csvrecords.fillna('')
 logging.info("Load csv{} done".format(optionvalues['csv_file']))
 
-try:
-    inserter.main_loop_pandas(csvrecords)
-
-finally:
-    pass
+d = dict(csvrecords.iloc[index])
+for k,v in d.items():
+    k = re.sub("\..*$","",k)
+    inserter.document.build_user_variable(k,v)
+    print("Set {} as {}".format(k,v))
 
 logging.info("Done.")

@@ -18,6 +18,7 @@ import pandas as pd
 
 import InsertionProcess
 import filters.for_hagaki
+import InsertionProcess.common_options
 
 # このディレクトリ下にチェックボックスなどの画像があるとする。
 # テンプレートファイルからの相対でも、絶対パスでも良い
@@ -25,81 +26,33 @@ SYMBOLSDIRPATH = 'icons'
 LOPORT="socket,host=localhost,port=2083;urp;"
 PDFEXPORTDIR = "./pdfout"
 
+optionvalues = {
+    'loglevel' : logging.WARNING,
+    'use_iconsdir' : SYMBOLSDIRPATH,
+    'use_loport' : LOPORT,
+    'use_pdfexport' : PDFEXPORTDIR,
+    'template_file' :  None,
+    'csv_file' : None,
+    'spillfix' : None,
+}
 
-parser = argparse.ArgumentParser(description= \
-                                 "Fill each record of data into Template, and export PDF",
-                                 formatter_class=argparse.RawTextHelpFormatter
+parser = InsertionProcess.common_options.args_setup(
+    "Fill each record of data into Template, and export PDF",
+    optionvalues
 )
-dgroup = parser.add_mutually_exclusive_group()
-dgroup.add_argument("-v", "--verbose",
-                    default=0, action="count",
-                    help="Increase verbosity"
-)
-dgroup.add_argument("-q", "--quiet",
-                    action="store_true",
-                    help="Run quietly"
-)
-parser.add_argument("--icons-path",
-                    help="Icons(series of images) directory. Default relative to template's './icons'")
-parser.add_argument("--pdf-export",
-                    help="PDF export directory, Default './pdfout'")
-parser.add_argument("--loport",
-                    help="UNO-URL, to connect to LibreOffice\n  ex. {}".format(LOPORT))
-parser.add_argument("--experimental-spillfix",
-                    type=int, choices=[1,2],
-                    help="Experimental spillout fix function enabled.\nWhen 2 specified, PDF are not written which failed to fix")
-parser.add_argument("-t", "--odt",
-                    help=".odt file(LoWriter document) to be used as Template")
-parser.add_argument("csv",
-                    help="CSV records to be inserted into template")
 
 parser.add_argument('--no-page-select', action="store_true",
                     help="for testing: export all page in template")
 
-args = parser.parse_args()
+args = InsertionProcess.common_options.args_parse(parser,optionvalues)
 
-# # 以下は、ファイルをimportする場合や cronjob から実行する場合のためのもの。
-# # .py ファイルがあるディレクトリにカレントディレクトリを移動する
-# workfolder=os.path.dirname(__file__)
-# if workfolder:
-#     print(__file__)
-#     os.chdir(workfolder)
-
-loglevel = logging.WARNING
-if args.quiet:
-    loglevel = logging.ERROR
-else:
-    if args.verbose >= 2:
-        loglevel = logging.DEBUG
-    elif args.verbose >=1:
-        loglevel = logging.INFO
-
-logging.basicConfig(level = loglevel)
-
-use_iconsdir = SYMBOLSDIRPATH
-use_loport = LOPORT
-use_pdfexport = PDFEXPORTDIR
-template_file = None
-csv_file = None
-spillfix = None
-
-if args.icons_path:
-    use_iconsdir = args.icons_path
-if args.pdf_export:
-    use_pdfexport = args.pdf_export
-if args.loport:
-    use_loport = args.LOPORT
-if args.odt:
-    template_file = args.odt
-if args.csv:
-    csv_file = args.csv
-if args.experimental_spillfix:
-    spillfix = args.experimental_spillfix
+logging.basicConfig(level = optionvalues['loglevel'])
 
 converters = [
     filters.for_hagaki.zip,
     filters.for_hagaki.one_char_name,
 ]
+
 if not args.no_page_select:
     converters.append(filters.for_hagaki.select_one_style)
 
@@ -109,32 +62,36 @@ def filenamer(num,record,obj,*,pcr=None,pcindex=0):
 
 try:
     inserter \
-        = InsertionProcess.InsertionProcess(template_file,use_loport, \
-                                            symbolsdir=use_iconsdir, \
-                                            pdfoutdir=use_pdfexport,
+        = InsertionProcess.InsertionProcess(optionvalues['template_file'],
+                                            optionvalues['use_loport'],
+                                            symbolsdir=optionvalues['use_iconsdir'],
+                                            pdfoutdir=optionvalues['use_pdfexport'],
+                                            spillfix=optionvalues['spillfix'],
                                             filenamer=filenamer,
-                                            spillfix=spillfix,
-                                            data_converter = converters,
+                                            data_converter=converters
         )
 
 except:
     inserter.cleanup()
-    logging.error("Can't connect LibreOffice, or open Document {}".format(template_file))
+    logging.error("Can't connect LibreOffice, or open Document {}" \
+                  .format(optionvalues['template_file']))
     exit(1)
 
 atexit.register(inserter.cleanup)
 logging.info("Use template {}, load icons from {} and export PDF to {}" \
-             .format(template_file,use_iconsdir,use_pdfexport))
+             .format(optionvalues['template_file'],
+                     optionvalues['use_iconsdir'],
+                     optionvalues['use_pdfexport']))
 
 # pandas を使って CSV を読み込む。
 # read_table はタブ切りを読み込み、dtype=str と指定することで
 # 全てのレコードを文字列として読み込む
-csvrecords = pd.read_table(csv_file,dtype=str)
+csvrecords = pd.read_table(optionvalues['csv_file'],dtype=str)
 # 全カラムが空値の行を削除する
 csvrecords = csvrecords.dropna(how='all')
 # NaN を空文字で置き換えておく
 csvrecords = csvrecords.fillna('')
-logging.info("Load csv{} done".format(csv_file))
+logging.info("Load csv{} done".format(optionvalues['csv_file']))
 
 try:
     inserter.main_loop_pandas(csvrecords)
@@ -143,4 +100,3 @@ finally:
     pass
 
 logging.info("Done.")
-
