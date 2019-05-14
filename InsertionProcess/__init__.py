@@ -27,16 +27,8 @@ PDFEXPORTDIR = 'pdfout'
 # data_converter(IndexNumberOfData,DicOfData,self)
 #   破壊的に DicOfData を変更し、データに対する操作を加える関数を指定。
 #   True を返すと差し込みを行ない、False ならこのデータに対する処理はスキップする
-# filenamer(IndexNumberOfData, DicOfData, self, [pcr=PageRange, pcindex=INDEX])
+# filenamer(IndexNumberOfData, DicOfData, self)
 #   PDFとして出力するファイル名を返す関数
-#   差し込みデータの、__meta.printcontorl というレコードにリスト、タプルなどを渡し
-#   た場合、その要素を PageRange として PDF出力を行なう。
-#   例えば [ '1','2','1-2' ] という値があった場合
-#     1ページのみ、2ページのみ、1-2ページ
-#   という3つのPDFが作成される。この一つ一つのPageRange指定と、インデックスが
-#   pcrとpcindexとして渡される。
-#   これらを使ってファイル名を生成するようにしておかないと、折角印刷ページ指示を
-#   しても同じファイルに書き出される事になってしまう。
 
 # give '.odt' as template_file,
 # LO connection desc as loportstr
@@ -119,31 +111,19 @@ class InsertionProcess:
             else:
                 logging.debug('Successfully spillfixed {}'.format(num))
 
-        # PageRangeのリスト。
-        #   [ '1-2' ,'1' ]
-        # が与えられたら、1-2ページの出力、1ページの出力が生成される。
+        # PageRangeとして '1-3; 1;' が与えられたら、テンプレートの
+        # 1,2,3,1 ページからなる4ページのPDFが生成される。
+        _fdata = {}
         if record.get('__meta.printcontrol'):
-            pcindex = 1;
-            for c in record['__meta.printcontrol']:
-                _fdata = {'PageRange':c}
-                if self._filenamer:
-                    pdffilename = self._filenamer(num,record,self,
-                                                  pcr=c, pcindex=pcindex)
-                else:
-                    pdffilename = '{:04d}_{:02d}.pdf'.format(num+1,pcindex)
-                self.document.export_as_pdf(
-                    os.path.join(self._pdfdir,pdffilename),
-                    filterdata = _fdata
-                )
-                pcindex+=1
+            _fdata = { 'PageRange': record['__meta.printcontrol'] }
+        if self._filenamer:
+            pdffilename = self._filenamer(num,record,self)
         else:
-            if self._filenamer:
-                pdffilename = self._filenamer(num,record,self)
-            else:
-                pdffilename = '{:04d}.pdf'.format(num+1)
-            self.document.export_as_pdf(
-                os.path.join(self._pdfdir,pdffilename)
-            )
+            pdffilename = '{:04d}.pdf'.format(num+1)
+        self.document.export_as_pdf(
+            os.path.join(self._pdfdir,pdffilename),
+            filterdata = _fdata,
+        )
 
     def transform_record(self, num, record):
         # transform single line of data, it may processed with optional

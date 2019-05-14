@@ -209,7 +209,7 @@ class Document:
             var.Content = value
         else:
             if nocreate:
-                logging.warning("UserVariable %s not exist" %(name,))
+                logging.info("UserVariable %s not exist as textfield in template" %(name,))
                 return
             var = self.document.createInstance(CSS + '.text.FieldMaster.User')
             var.Name = name

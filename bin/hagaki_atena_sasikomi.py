@@ -56,7 +56,7 @@ converters = [
 if not args.no_page_select:
     converters.append(filters.for_hagaki.select_one_style)
 
-def filenamer(num,record,obj,*,pcr=None,pcindex=0):
+def filenamer(num,record,obj):
     pdffilename = '{:04d}.pdf'.format(num+1)
     return pdffilename
 

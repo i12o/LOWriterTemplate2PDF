@@ -39,7 +39,7 @@ def select_one_style(num,data,obj):
         if data.get(n) != "":
             onlyonereceipt = False
     if onlyonereceipt:
-        data[pc_colname] = ['1']
+        data[pc_colname] = '1'
         logging.debug("Page: {}".format(data[pc_colname]))
         return True
 
@@ -50,11 +50,11 @@ def select_one_style(num,data,obj):
             logging.debug("hit samefamily: {} {}".format(n,data.get(n)))
             samefamily = False
     if samefamily:
-        data[pc_colname] = ['2']
+        data[pc_colname] = '2'
         logging.debug("Page: {}".format(data[pc_colname]))
         return True
 
     # フォールバックデフォルト
-    data[pc_colname] = ['3']
+    data[pc_colname] = '3'
     logging.debug("Page: {}".format(data[pc_colname]))
     return True

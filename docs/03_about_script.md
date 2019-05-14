@@ -103,40 +103,19 @@ TextFrameオブジェクトの説明に spillfix:FLOAT と書いておくと、F
 
 ファイル名を生成して返す関数を指定します。
 
-    def FUNCTION(レコード番号,レコード,オブジェクト,
-         pcr=STRING, pcindex=INT
-    ):
+    def FUNCTION(レコード番号,レコード,オブジェクト):
         return 文字列
 
 となる関数を指定して下さい。レコードは処理中の1レコード、CSVの1行です。
 レコード番号はCSVの何行目を処理しているかを示します。オブジェクトは
-`InsertionProcess.InsertionProcess` のインスタンスが渡されます。pcr は
-ページ制御指示があった場合のその文字列(`1-3`、`2`など)、pcindexはペー
-ジ制御指示の何番目を処理するかが渡されます(`1-3 2 4 5` と指示されてい
-た場合、0、1、2、3 の順に pcindex が設定されて filenamer が呼び出され
-ます)。
+`InsertionProcess.InsertionProcess` のインスタンスが渡されます。
 
-    def by_primarykey(num, record, obj, pcr=None, pcindex=0):
+    def by_primarykey(num, record, obj):
        return record['PrimaryKey'] + '.pdf'
 
 
 を filenamer に指定すると、入力データの `PrimaryKey` の値に `.pdf` を
 付けたものが PDF の名前になります。
-
-ページ制御指示(`__meta.printcontrol`)が指定された場合、この指示に従っ
-てPDFが作成されます。複数の値が指定されている場合、それ毎に filenamer
-が呼び出され、PDFへの書き出しが行なわれます。
-
-`1-3 2 4 5` が `__meta.printcontrol` に指定されているレコードの場合、
-
-1. `pcr=1-3, pcindex=0`
-1. `pcr=2, pcindex=1`
-1. `pcr=4, pcindex=2`
-1. `pcr=5, pcindex=3`
-
-と4回、filenamer が呼び出されます。カスタム filenamer と
-`__meta.printcontrol`を一緒に使う場合、pcindex を使うなどして上書きと
-ならないファイル名を返すようにして下さい。
 
 ### data_converter
 
