@@ -92,6 +92,21 @@ class Document:
                 self.initial_spillfix_frame_status[name] = info
         return;
 
+    def get_printer_info(self):
+        return self.document.Printer
+
+    def set_printer_property(self,prop):
+        printer_prop = []
+        for k,v in prop.items():
+            printer_prop.append(
+                PropertyValue(k,0,v,0)
+            )
+        logging.debug("Priter before {}".format(self.document.Printer))
+        self.document.Printer = printer_prop
+        logging.debug("set prop {}".format(printer_prop))
+        logging.debug("Priter after {}".format(self.document.Printer))
+        return self.document.Printer
+
     # export document in PDF
     # If you want to export only pages 1,2 of document, passing filterdata
     # as this:
@@ -116,6 +131,18 @@ class Document:
         try:
             logging.debug("Export as {}, prop {}".format(exportpdfname,exportprop))
             self.document.storeToURL(exportpdfname,exportprop)
+        except:
+            logging.error("Can't export {}".format(exportpdfname))
+
+    def send_to_printer(self,filterdata=None):
+        exportprop = []
+        logging.debug("filterdata {}".format(filterdata))
+        if filterdata:
+            for (k,v) in filterdata.items():
+                exportprop.append(PropertyValue(k,0,v,0))
+        try:
+            logging.debug("Print with prop {}".format(exportprop))
+            self.document.print(exportprop)
         except:
             logging.error("Can't export {}".format(exportpdfname))
 

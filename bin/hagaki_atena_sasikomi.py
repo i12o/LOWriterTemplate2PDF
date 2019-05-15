@@ -38,7 +38,8 @@ optionvalues = {
 
 parser = InsertionProcess.common_options.args_setup(
     "Fill each record of data into Template, and export PDF",
-    optionvalues
+    optionvalues,
+    enable_printer=True
 )
 
 parser.add_argument('--no-page-select', action="store_true",
@@ -47,6 +48,12 @@ parser.add_argument('--no-page-select', action="store_true",
 args = InsertionProcess.common_options.args_parse(parser,optionvalues)
 
 logging.basicConfig(level = optionvalues['loglevel'])
+
+use_printer = False
+printer_option = {}
+if optionvalues.get('printout'):
+    printer_option['printer'] = optionvalues.get('printer_name')
+    use_printer = True
 
 converters = [
     filters.for_hagaki.zip,
@@ -68,7 +75,8 @@ try:
                                             pdfoutdir=optionvalues['use_pdfexport'],
                                             spillfix=optionvalues['spillfix'],
                                             filenamer=filenamer,
-                                            data_converter=converters
+                                            data_converter=converters,
+                                            **printer_option
         )
 
 except:
@@ -78,10 +86,16 @@ except:
     exit(1)
 
 atexit.register(inserter.cleanup)
-logging.info("Use template {}, load icons from {} and export PDF to {}" \
-             .format(optionvalues['template_file'],
-                     optionvalues['use_iconsdir'],
-                     optionvalues['use_pdfexport']))
+if use_printer:
+    logging.info("Use template {}, load icons from {} and print to {}" \
+                 .format(optionvalues['template_file'],
+                         optionvalues['use_iconsdir'],
+                         printer_option['printer']))
+else:
+    logging.info("Use template {}, load icons from {} and export PDF to {}" \
+                 .format(optionvalues['template_file'],
+                         optionvalues['use_iconsdir'],
+                         optionvalues['use_pdfexport']))
 
 # pandas を使って CSV を読み込む。
 # read_table はタブ切りを読み込み、dtype=str と指定することで

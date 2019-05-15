@@ -6,7 +6,7 @@ import logging
 # 共通のオプションと固有のオプションの書き分け、
 # どういう風に書くのが良いのか。とりあえずシンプルに
 
-def args_setup(desc,defaults):
+def args_setup(desc,defaults,*,enable_printer=False):
     parser = argparse.ArgumentParser(description = desc,
                                      formatter_class=argparse.RawTextHelpFormatter
     )
@@ -33,6 +33,12 @@ def args_setup(desc,defaults):
                         help=".odt file(LoWriter document) to be used as Template")
     parser.add_argument("csv",
                         help="CSV records to be inserted into template")
+    if enable_printer:
+        parser.add_argument("--printout",
+                            action="store_true",
+                            help="Directly printout, instead of exporting to PDF")
+        parser.add_argument("--printer-name",
+                            help="Printer name for printout.")
     return parser
 
 def args_parse(parser,defvalues):
@@ -58,5 +64,8 @@ def args_parse(parser,defvalues):
         defvalues['csv_file'] = args.csv
     if args.experimental_spillfix:
         defvalues['spillfix'] = args.experimental_spillfix
-
+    if args.printout:
+        defvalues['printout'] = True
+        if args.printer_name:
+            defvalues['printer_name'] = args.printer_name
     return args

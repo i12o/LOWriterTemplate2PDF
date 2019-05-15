@@ -11,7 +11,6 @@ from collections.abc import Iterable
 
 import uno
 import unohelper
-from com.sun.star.beans import PropertyValue
 import pandas as pd
 
 import InsertionProcess.DoInsertion
@@ -46,11 +45,13 @@ class InsertionProcess:
     def __init__(self,
                  template_file, # filename of odt
                  loportstr,     # --accept parameter of LO
+                 *,
                  symbolsdir=SYMBOLSDIRPATH, # Relative to template
                  data_converter=None,       # Data converter
                  filenamer=None,            # Filename creater
                  pdfoutdir=PDFEXPORTDIR,    # PDF output dir
                  spillfix=None, # Experimental: do spillfix
+                 printer=None,  # Directly print to Specified Printer
     ):
         self._data_converter = None
         if data_converter:
@@ -62,6 +63,8 @@ class InsertionProcess:
         self._pdfdir = pdfoutdir
         self._do_cleanup = False
         self._spillfix = spillfix
+        self._printer = printer
+        self._direct_print = False
 
         logging.debug("Connecting libreoffice with {}".format(loportstr))
         self.context = LOif.ConnectLO(loportstr)
@@ -85,6 +88,25 @@ class InsertionProcess:
         (self.initial_graphics,self.graphic_variant_dic) \
             = self.document.get_all_graphics_in_doc()
         self.processor = DoInsertion.Processor(self.document,self._symbolsdir)
+
+        if self._printer is not None:
+            logging.info("Printout directly to printer named as {}".format(self._printer))
+            self._direct_print = True
+            self.set_printer()
+
+    # プリンターを指定する。空文字が指定されていればそのままいじらない。
+    # 文字列が指定されていた場合、プリンターを指定のプリンタにする。
+    def set_printer(self):
+        if self._printer:
+            # Usable property:
+            #   Name: Name of printer in string
+            #   PaperOrientation: CSS.view.PaperOrientation.PORTRAIT
+            #     or  CSS.view.PaperOrientation.LANDSCAPE. enum
+            #   PaperFormat: CSS.view.PaperFormat.A4、etc. enum
+            #   PaperSize: struct CSS.awt.Size.  size.Width, size.Height
+            #     must be int, size in mm x 100 times.
+            props = { 'Name': self._printer }
+            self.document.set_printer_property(props)
 
     def insert_record_process(self,record):
         self.document.reset(spillfix = self._spillfix)
@@ -115,15 +137,23 @@ class InsertionProcess:
         # 1,2,3,1 ページからなる4ページのPDFが生成される。
         _fdata = {}
         if record.get('__meta.printcontrol'):
-            _fdata = { 'PageRange': record['__meta.printcontrol'] }
+            if self._direct_print:
+                _fdata = { 'Pages': record['__meta.printcontrol'] }
+            else:
+                _fdata = { 'PageRange': record['__meta.printcontrol'] }
         if self._filenamer:
             pdffilename = self._filenamer(num,record,self)
         else:
             pdffilename = '{:04d}.pdf'.format(num+1)
-        self.document.export_as_pdf(
-            os.path.join(self._pdfdir,pdffilename),
-            filterdata = _fdata,
-        )
+        if self._direct_print:
+            self.document.send_to_printer(
+                filterdata = _fdata,
+            )
+        else:
+            self.document.export_as_pdf(
+                os.path.join(self._pdfdir,pdffilename),
+                filterdata = _fdata,
+            )
 
     def transform_record(self, num, record):
         # transform single line of data, it may processed with optional
