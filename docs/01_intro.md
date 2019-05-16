@@ -18,16 +18,12 @@ LibreOffice をサーバプロセスの様に使い、スクリプトからデ�
 定します。
 
 スクリプトが動作するためには、スクリプトから接続できる LibreOffice が
-実行中である必要があります。
+実行中でないといけません。
 
     libreoffice --accept='socket,host=localhost,port=2083;urp;'
 
-などとして、事前に LibreOffice を起動しておきます。LibreOffice 起動時
-に `--accept` オプションを付ける必要があります。よくわからん、という方
-は上の例の通りに実行して下さい。既に起動中の LibreOffice がある場合、
-それを一旦終了させてから、上のコマンドで再起動して下さい。これは
-localhost のポート 2083 で接続を受け付けるという意味ですが、必要とあれ
-ば各自の環境にあわせて変更できます。
+として LibreOffice を起動します。既に起動中の LibreOffice がある場合、
+一旦終了させてから、上のコマンドで再起動して下さい。
 
     bin/generic_form_insertion.py -t samples/test_sasikomi.odt \
        samples/test_sasikomi.csv
@@ -35,11 +31,9 @@ localhost のポート 2083 で接続を受け付けるという意味ですが�
     bin/generic_form_insertion.py -t samples/test_toggle_selection.odt \
        samples/test_toggle_selection.csv
 
-それぞれ、pdfout の下に PDF が作成されるので、データの差し込みが行なわ
-れてPDFになってることをご確認下さい。acceptソケットのポート番号などを
-変えた場合、スクリプトのオプションで
- `--loport socket,host=localhost,port=2083;urp;`
-などを指定できます。
+
+どちらも `pdfout` の下に PDF を作成するので、データの差し込みが行なわ
+れてPDFになってることをご確認下さい。
 
 `generic_form_insertion.py` を年賀状の宛名印刷に特化させたのが
 `bin/hagaki_atena_sasikomi.py` で、差し込みデータに対する特殊処理が追
@@ -49,11 +43,12 @@ localhost のポート 2083 で接続を受け付けるという意味ですが�
        -t samples/nenga_hagaki_multi_pattern.odt \
        samples/nenga_address_sample.csv
 
-して pdfout の下の PDF をご確認下さい。宛名の数(最大3名まで)によってテ
-ンプレートから使用されるページが変わるようになっています。こういう宛名
-の書き方が適切なものかどうかはよう知りません。こういう事できるよ、とい
-うサンプルを兼ねています。普通の年賀ハガキに印刷して使えるよう、位置合
-わせはしたつもりです。
+して `pdfout` の下の PDF をご確認下さい。宛名の数(最大3名まで)によって
+テンプレートの使うページが変わります。こういう事もできる、というデモで
+す。
+
+普通の年賀ハガキに印刷して使えるよう、位置合わせはしておりますが、こう
+いう宛名の書き方がマナー的な意味で適切なのかどうかはよう知りません。
 
 ## 動作要件、依存
 
