@@ -1,5 +1,27 @@
 # LOWriterTemplate2PDF
 
+You can create PDF files from ODT template, filling it with data
+read from CSV text.
+
+  - [CSV Data Sample](./samples/test_image_generation.csv)
+  - [ODT Template Sample](./samples/test_image_generation.odt)
+  - [Resulting PDFs](./samples/test_image_generation.result/)
+
+After checking out this repository, go to top of your working copy.
+Then do these commands to create above sample, on your machine.
+
+Start libreoffice with server functinality.  It's beyond my ability to
+describing the meaning of arguments.  If you have running LO already,
+first shutdown LO, and restart LO with these args.
+
+    libreoffice --accept='socket,host=localhost,port=2083;urp;'
+
+Create PDF under pdfout directory, with sample test_image_generation.
+
+    bin/generic_form_insertion.py -t samples/test_image_generation.odt \
+        test_image_generation.csv
+
+
 LibreOffice Writer で作成した帳票テンプレートに、CSVのデータを差し込み、
 PDF としてエクスポートします。
 
