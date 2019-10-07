@@ -64,8 +64,9 @@ def args_parse(parser,defvalues):
         defvalues['csv_file'] = args.csv
     if args.experimental_spillfix:
         defvalues['spillfix'] = args.experimental_spillfix
-    if args.printout:
+    args_vars = vars(args)
+    if args_vars.get('printout'):
         defvalues['printout'] = True
-        if args.printer_name:
+        if args_vars.get('printer_name'):
             defvalues['printer_name'] = args.printer_name
     return args

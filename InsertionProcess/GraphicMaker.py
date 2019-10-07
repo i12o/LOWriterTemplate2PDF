@@ -65,7 +65,7 @@ def create_qrcode_svg(value):
 known_algorithm["QRCode"] = create_qrcode_svg
 
 def get_graphic_maker_func(algoname):
-    return known_algorithm[algoname]
+    return known_algorithm.get(algoname)
 
 def raw_png(filename):
     '''生のPNGファイルを読み込む。画像生成アルゴリズムではない'''

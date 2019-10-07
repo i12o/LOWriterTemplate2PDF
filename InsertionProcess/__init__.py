@@ -175,8 +175,9 @@ class InsertionProcess:
     # レコードに生成する。
     def auto_complement_algorithm_field(self, data):
         '''データレコードと画像名の辞書から、生成すべき画像種のデータレコードを自動生成する'''
+        graphic_algos = list(GraphicMaker.known_algorithm.keys()) + ["URL"]
         for dk in { s for s in data.keys() if len(s.split('.',1)) == 1 }:
-            for alg in GraphicMaker.known_algorithm:
+            for alg in graphic_algos:
                 newdk = '%s.%s' %(dk,alg)
                 if data.get(newdk) \
                    or not (self.graphic_variant_dic \

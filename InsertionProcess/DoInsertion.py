@@ -98,10 +98,23 @@ class Processor:
                         )
                     else:
                         logging.warning("Failed to create Image %s.%s with %s" \
-                                        %(item["Name"],item["Algorithm"],item["Value"]))
+                                        %(item["ImageName"],item["Algorithm"],item["Value"]))
                 else:
-                    logging.warning("No such Image Generator known %s, for %s" \
-                                    %(item["Algorithm"],item["Name"]))
+                    # Add URL type
+                    if item["Algorithm"] == "URL":
+                        newobj = self.document.create_graphic_from_url(item["Value"])
+                        if newobj:
+                            self.document.replace_graphic(
+                                item["ImageName"],
+                                newobj,
+                                NameDic=self.document.grouped_graphics
+                            )
+                        else:
+                            logging.warning("Failed load url for Image %s.%s with %s" \
+                                            %(item["ImageName"],item["Algorithm"],item["Value"]))
+                    else:
+                        logging.warning("No such Image Generator known %s, for %s" \
+                                        %(item["Algorithm"],item["Name"]))
             elif item["Type"] == "ImageSelect":
                 gobj = self.get_graphic_object_from_icons(item["ImageList"], item["Value"])
                 self.document.replace_graphic(

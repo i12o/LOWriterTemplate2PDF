@@ -210,6 +210,13 @@ class Document:
         logging.debug("queryGraphic %s" %(gobj,))
         return gobj
 
+    def create_graphic_from_url(self,url):
+        gobj = self.graphicprovider.queryGraphic((
+            PropertyValue("URL",0,url,0),
+        ))
+        logging.debug("queryGraphic %s" %(gobj,))
+        return gobj
+
     # pass first returned value of get_all_graphics_in_doc()
     def reset_all_graphic_in_doc(self):
         gobjects = self.document.GraphicObjects
