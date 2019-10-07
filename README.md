@@ -11,7 +11,7 @@ After checking out this repository, go to top of your working copy.
 Then do these commands to create above sample, on your machine.
 
 Start libreoffice with server functinality.  It's beyond my ability to
-describing the meaning of arguments.  If you have running LO already,
+describe the meaning of arguments.  If you have running LO already,
 first shutdown LO, and restart LO with these args.
 
     libreoffice --accept='socket,host=localhost,port=2083;urp;'
@@ -21,6 +21,21 @@ Create PDF under pdfout directory, with sample test_image_generation.
     bin/generic_form_insertion.py -t samples/test_image_generation.odt \
         test_image_generation.csv
 
+More deeper information, look those PDFs and source.
+
+## Requirements
+
+  - Python3
+  - LibreOffice( >= 6.1.5)
+  - python3-uno
+  - python3-barcode
+  - python3-pyqrcode
+  - python3-pandas
+
+It might work newer/older version of LibreOffice.  I just developed
+with this version.
+
+## 英語ではこれ以上説明する能力がございません
 
 LibreOffice Writer で作成した帳票テンプレートに、CSVのデータを差し込み、
 PDF としてエクスポートします。
